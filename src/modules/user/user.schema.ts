@@ -15,7 +15,6 @@ export const UserSchema = z.object({
 
 export const CreateUserSchema = UserSchema.omit({
   id: true,
-  products: true,
   createdAt: true,
   updatedAt: true,
 });
@@ -33,5 +32,11 @@ export const UpdatePasswordSchema = z.object({
   password: z.string().min(8, { message: "Password must be at least 8 characters long" }),
 });
 
+export const LoginSchema = z.object({
+  email: z.string().email({ message: "Invalid email" }),
+  password: z.string().min(8, { message: "Password must be at least 8 characters long" }),
+});
+
 export type TUser = z.infer<typeof UserSchema>;
 export type TCreateUser = z.infer<typeof CreateUserSchema>;
+export type TLogin = z.infer<typeof LoginSchema>;
