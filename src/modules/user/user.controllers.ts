@@ -59,6 +59,11 @@ export const updateUserHandler = async (request: FastifyRequest, reply: FastifyR
     name?: string;
     email?: string;
   };
+  const currentUser = request.user as { id: string; email: string };
+
+  if (currentUser.id !== id) {
+    throw new CustomError("Unauthorized", 401);
+  }
   try {
     const updatedUser = await updateUserService(id, name, email);
 

@@ -3,14 +3,12 @@ import { CustomError } from "../../lib/custom-error";
 import { LoginSchema, TCreateUser, TLogin } from "../user/user.schema";
 import { prisma } from "../../lib/prisma";
 import { loginUserService, registerUserService } from "../user/user.service";
-import { app } from "../../app";
 
 //?CREATE USER
 export const registerUserHandler = async (
   request: FastifyRequest,
   reply: FastifyReply
 ) => {
-  console.log(request.body);
   const { name, email, password } = request.body as TCreateUser;
 
   try {
@@ -32,14 +30,15 @@ export const loginHandler = async (request: FastifyRequest, reply: FastifyReply)
       name: string;
     };
 
-    //generate the jwt token
-    const accessToken = app.jwt.sign({ id: user.id, email: user.email });
+    //sign the jwt token
+    const accessToken = request.jwt.sign({ id: user.id, email: user.email });
 
     reply
       .status(200)
       .setCookie("accessToken", accessToken, {
+        path: "/",
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
+        secure: false,
       })
       .send({ message: "Login successful" });
   } catch (error: any) {

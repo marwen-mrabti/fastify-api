@@ -183,9 +183,15 @@ export const updateUserService = async (id: string, name?: string, email?: strin
       where: {
         id,
       },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        createdAt: true,
+        updatedAt: true,
+      },
       data: {
         name: name || user.name,
-        email: email || user.email,
       },
     });
     return updatedUser;

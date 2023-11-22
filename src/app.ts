@@ -20,6 +20,7 @@ declare module "fastify" {
   }
   interface FastifyInstance {
     authenticate: any;
+    isAuthorized: any;
   }
 }
 
@@ -46,24 +47,42 @@ app.register(fjwt, {
     signed: false,
   },
   sign: {
-    expiresIn: "60m",
+    expiresIn: "2d",
   },
+  decode: { complete: true },
 });
 
-//auth decorator
+app.addHook("preHandler", (req, reply, next) => {
+  req.jwt = app.jwt;
+  return next();
+});
+
+//auth decorators
 app.decorate(
   "authenticate",
   async function (request: FastifyRequest, reply: FastifyReply) {
     try {
-      await request.jwtVerify();
+      const jwt = await request.jwtVerify();
+      if (!jwt) {
+        throw new CustomError("Unauthorized", 401);
+      }
     } catch (error: any) {
       throw new CustomError(error.message, 500);
     }
   }
 );
-app.addHook("preHandler", (req, reply, next) => {
-  req.jwt = app.jwt;
-  return next();
+
+app.decorate("isAuthorized", async (req: FastifyRequest, res: FastifyReply) => {
+  try {
+    const token = req.cookies.accessToken as string;
+    const decodeToken = req.jwt.decode(token) as {
+      payload: { id: string; email: string; iat: number; exp: number };
+    };
+    const user = decodeToken.payload;
+    req.user = user;
+  } catch (error: any) {
+    throw new CustomError(error.message, 401);
+  }
 });
 
 // Run the server!
