@@ -4,11 +4,14 @@ import limiter from "@fastify/rate-limit";
 import cors from "@fastify/cors";
 import fastifyCookie from "@fastify/cookie";
 import fjwt, { JWT } from "@fastify/jwt";
+import swagger from "@fastify/swagger";
 
 import { CustomError, createGlobalErrorHandler } from "./lib/custom-error";
 import userRouter from "./modules/user/user.route";
 import productRouter from "./modules/product/product.route";
 import authRouter from "./modules/auth/auth.route";
+import { isAuthorizedAdminHandler, isAuthorizedHandler } from "./lib/auth.handlers";
+import { swaggerOptions } from "./lib/swaggerOptions";
 
 export const app = Fastify({
   logger: true,
@@ -21,11 +24,14 @@ declare module "fastify" {
   interface FastifyInstance {
     authenticate: any;
     isAuthorized: any;
+    isAuthorizedAdmin: any;
   }
 }
 
 //security headers
-app.register(cors, {});
+app.register(cors, {
+  hook: "preHandler",
+});
 app.register(helmet, { contentSecurityPolicy: false, global: true });
 app.register(limiter, {
   max: 500,
@@ -72,17 +78,14 @@ app.decorate(
   }
 );
 
-app.decorate("isAuthorized", async (req: FastifyRequest, res: FastifyReply) => {
-  try {
-    const token = req.cookies.accessToken as string;
-    const decodeToken = req.jwt.decode(token) as {
-      payload: { id: string; email: string; iat: number; exp: number };
-    };
-    const user = decodeToken.payload;
-    req.user = user;
-  } catch (error: any) {
-    throw new CustomError(error.message, 401);
-  }
+app.decorate("isAuthorized", isAuthorizedHandler);
+app.decorate("isAuthorizedAdmin", isAuthorizedAdminHandler);
+app.register(swagger, swaggerOptions as any);
+
+app.get("/docs", async (req, reply) => {
+  await app.ready();
+  const swaggerDocs = app.swagger();
+  reply.send(swaggerDocs);
 });
 
 // Run the server!

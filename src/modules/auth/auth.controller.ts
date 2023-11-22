@@ -2,7 +2,7 @@ import { FastifyReply, FastifyRequest } from "fastify";
 import { CustomError } from "../../lib/custom-error";
 import { LoginSchema, TCreateUser, TLogin } from "../user/user.schema";
 import { prisma } from "../../lib/prisma";
-import { loginUserService, registerUserService } from "../user/user.service";
+import { loginUserService, registerUserService } from "./auth.service";
 
 //?CREATE USER
 export const registerUserHandler = async (
@@ -28,10 +28,15 @@ export const loginHandler = async (request: FastifyRequest, reply: FastifyReply)
       id: string;
       email: string;
       name: string;
+      role: "USER" | "ADMIN";
     };
 
     //sign the jwt token
-    const accessToken = request.jwt.sign({ id: user.id, email: user.email });
+    const accessToken = request.jwt.sign({
+      id: user.id,
+      email: user.email,
+      role: user.role,
+    });
 
     reply
       .status(200)

@@ -9,12 +9,28 @@ import {
 } from "./product.controllers";
 
 async function productRouter(app: FastifyInstance) {
-  app.post("/new", createProductHandler); //require user auth
+  app.post(
+    "/new",
+    { preHandler: [app.authenticate, app.isAuthorizedAdmin] },
+    createProductHandler
+  );
   app.get("/all", fetchAllProductsHandler);
-  app.get("/all/:ownerId", fetchAllProductsByOwnerHandler); //require user auth / admin access
+  app.get(
+    "/all/:ownerId",
+    { preHandler: [app.authenticate, app.isAuthorized] },
+    fetchAllProductsByOwnerHandler
+  );
   app.get("/:id", fetchProductByIdHandler);
-  app.patch("/:id", updateProductHandler); //require user auth
-  app.delete("/:id", deleteProductHandler); //require user auth
+  app.patch(
+    "/edit/:id",
+    { preHandler: [app.authenticate, app.isAuthorizedAdmin] },
+    updateProductHandler
+  );
+  app.delete(
+    "/delete/:id",
+    { preHandler: [app.authenticate, app.isAuthorizedAdmin] },
+    deleteProductHandler
+  );
 }
 
 export default productRouter;

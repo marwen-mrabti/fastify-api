@@ -55,17 +55,22 @@ export const getUserByIdHandler = async (
 //?UPDATE USER
 export const updateUserHandler = async (request: FastifyRequest, reply: FastifyReply) => {
   const { id } = request.params as { id: string };
-  const { name, email } = request.body as {
+  const { name, role } = request.body as {
     name?: string;
-    email?: string;
+    role: "USER" | "ADMIN";
   };
-  const currentUser = request.user as { id: string; email: string };
+  const currentUser = request.user as {
+    id: string;
+    email: string;
+    role: "USER" | "ADMIN";
+  };
 
-  if (currentUser.id !== id) {
+  if (currentUser.id !== id && currentUser.role !== "ADMIN") {
     throw new CustomError("Unauthorized", 401);
   }
+
   try {
-    const updatedUser = await updateUserService(id, name, email);
+    const updatedUser = await updateUserService({ id, name, role });
 
     if (!updatedUser) {
       throw new CustomError("User not found", 404);
@@ -84,6 +89,15 @@ export const updateUserHandler = async (request: FastifyRequest, reply: FastifyR
 //?DELETE USER
 export const deleteUserHandler = async (request: FastifyRequest, reply: FastifyReply) => {
   const { id } = request.params as { id: string };
+  const currentUser = request.user as {
+    id: string;
+    email: string;
+    role: "USER" | "ADMIN";
+  };
+
+  if (currentUser.id !== id && currentUser.role !== "ADMIN") {
+    throw new CustomError("Unauthorized", 401);
+  }
 
   try {
     await deleteUserService(id);

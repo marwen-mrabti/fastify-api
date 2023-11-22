@@ -1,3 +1,4 @@
+import { off } from "process";
 import { CustomError } from "../../lib/custom-error";
 import { prisma } from "../../lib/prisma";
 import { CreateProductSchema, TCreateProduct, TProduct } from "./product.schema";
@@ -24,9 +25,10 @@ export const createProduct = async (product: TCreateProduct) => {
 };
 
 type TProductWithOwner = TProduct & { owner: { email: string; name: string } };
-
 export const fetchAllProducts = async (
   ownerId?: string
+  // offset?: number
+  // ITEMS_PER_PAGE?: number
 ): Promise<TProductWithOwner[] | []> => {
   try {
     const whereClause = ownerId ? { ownerId } : {};
@@ -51,6 +53,8 @@ export const fetchAllProducts = async (
       orderBy: {
         createdAt: "desc",
       },
+      // skip:offset,
+      // take: ITEMS_PER_PAGE,
     })) as TProductWithOwner[];
     return products;
   } catch (error) {
@@ -70,5 +74,31 @@ export const fetchProductById = async (id: string) => {
     throw new CustomError("Error fetching product", 500);
   } finally {
     await prisma.$disconnect();
+  }
+};
+
+export const deleteProduct = async (id: string) => {
+  try {
+    //check if the product exists
+    const product = await fetchProductById(id);
+    if (!product) {
+      throw new CustomError("Product not found", 404);
+    }
+
+    //if the product had an image, delete it from public folder
+    /*  if (product.image) {
+        //check if the image exists
+        const imagePath = path.join(__dirname, `../../../public/images/${product.image}`);
+        await fs.promises.access(imagePath, fs.constants.F_OK);
+        //delete the image
+        fs.unlinkSync(imagePath);
+      }
+    */
+    await prisma.product.delete({ where: { id } });
+    return;
+  } catch (error) {
+    throw new CustomError("Error deleting product", 500);
+  } finally {
+    prisma.$disconnect();
   }
 };
